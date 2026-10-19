@@ -1,0 +1,12 @@
+[gd_scene format=3 uid="uid://cxrb06gjl3lys"]
+
+[ext_resource type="Script" uid="uid://i2mnxoj3n7uw" path="res://goalkeeper.gd" id="1_djcul"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_g0rd1"]
+radius = 23.47
+
+[node name="Goalkeeper" type="CharacterBody2D" unique_id=937516802]
+script = ExtResource("1_djcul")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1756532108]
+shape = SubResource("CircleShape2D_g0rd1")
