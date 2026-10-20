@@ -237,3 +237,22 @@ func can_block_ball(ball_position: Vector2) -> bool:
 	var alignment := save_direction.dot(ball_direction)
 
 	return alignment >= 0.35
+	
+	
+	
+func can_block_shot(
+	ball_position: Vector2,
+	ball_height: float
+) -> bool:
+	if not can_block_ball(ball_position):
+		return false
+
+	match state:
+		State.QUICK_SAVE:
+			return ball_height <= 22.0
+
+		State.DIVING:
+			return ball_height <= 95.0
+
+		_:
+			return false

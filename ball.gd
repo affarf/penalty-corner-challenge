@@ -16,6 +16,11 @@ enum Routine {
 	SLIP_PASS
 }
 
+enum ShotType {
+	LOW,
+	DRAG_FLICK
+}
+
 const INJECT_POSITION := Vector2(320, 30)
 const STOP_POSITION := Vector2(640, 340)
 const SLIP_POSITION := Vector2(830, 310)
@@ -23,31 +28,36 @@ const SLIP_POSITION := Vector2(830, 310)
 const GOAL_Y := 30.0
 const GOAL_LEFT := 550.0
 const GOAL_RIGHT := 730.0
+const GOAL_BAR_HEIGHT := 90.0
 const BALL_RADIUS := 8.0
 
 @export var injection_speed := 460.0
 @export var pass_speed := 520.0
 @export var shot_speed := 850.0
-
 @export var rebound_speed := 480.0
 @export var rebound_friction := 600.0
 
 var phase := Phase.READY
 var routine := Routine.DIRECT
+var shot_type := ShotType.LOW
 
-var target := STOP_POSITION
+var target: Vector2 = STOP_POSITION
 var stop_timer := 0.0
+
+var ball_height: float = 0.0
+var peak_height: float = 0.0
+var shot_start_position := Vector2.ZERO
+var shot_total_distance: float = 1.0
 
 var rebound_velocity := Vector2.ZERO
 
-
-@onready var goalkeeper: CharacterBody2D = \
+@onready var goalkeeper = \
 	get_parent().get_node("Goalkeeper")
-
 
 
 func _ready() -> void:
 	position = INJECT_POSITION
+	queue_redraw()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -64,13 +74,11 @@ func _unhandled_input(event: InputEvent) -> void:
 func start_corner() -> void:
 	routine = Routine.values().pick_random()
 	phase = Phase.INJECTING
-
 	print("Penalty corner started!")
 
 
 func _physics_process(delta: float) -> void:
 	match phase:
-
 		Phase.INJECTING:
 			position = position.move_toward(
 				STOP_POSITION,
@@ -87,11 +95,10 @@ func _physics_process(delta: float) -> void:
 
 			if stop_timer <= 0.0:
 				if routine == Routine.DIRECT:
-					print("Direct shot!")
 					begin_shot()
 				else:
-					print("Slip pass!")
 					phase = Phase.PASSING
+					print("Slip pass!")
 
 		Phase.PASSING:
 			position = position.move_toward(
@@ -100,7 +107,6 @@ func _physics_process(delta: float) -> void:
 			)
 
 			if position.distance_to(SLIP_POSITION) < 1.0:
-				print("Slip received!")
 				begin_shot()
 
 		Phase.SHOOTING:
@@ -112,78 +118,147 @@ func _physics_process(delta: float) -> void:
 		Phase.FINISHED:
 			pass
 
+	queue_redraw()
+
 
 func begin_shot() -> void:
+	shot_type = ShotType.values().pick_random()
+
 	target = Vector2(
 		randf_range(565.0, 715.0),
 		GOAL_Y
 	)
 
+	shot_start_position = position
+	shot_total_distance = maxf(
+		position.distance_to(target),
+		1.0
+	)
+
+	if shot_type == ShotType.DRAG_FLICK:
+		peak_height = randf_range(65.0, 145.0)
+		print("DRAG FLICK! Watch the height!")
+	else:
+		peak_height = 0.0
+		print("LOW SHOT!")
+
+	ball_height = 0.0
 	phase = Phase.SHOOTING
 
 
 func process_shot(delta: float) -> void:
-	var previous_position := global_position
+	var previous_position: Vector2 = global_position
 
+	var previous_height: float = ball_height
+
+	var remaining_distance: float = \
+		position.distance_to(target)
+
+	var shot_direction: Vector2 = \
+		(target - position).normalized()
+
+	# Move toward goal.
 	position = position.move_toward(
 		target,
 		shot_speed * delta
 	)
 
-	var closest_point := \
+	# Simulate height for elevated drag flicks.
+	var distance_travelled: float = \
+		shot_start_position.distance_to(position)
+
+	var progress: float = clampf(
+		distance_travelled / shot_total_distance,
+		0.0,
+		1.0
+	)
+
+	if shot_type == ShotType.DRAG_FLICK:
+		ball_height = peak_height * sin(
+			progress * PI * 0.75
+		)
+	else:
+		ball_height = 0.0
+
+	# Find the closest point on the ball's
+	# movement path to the goalkeeper.
+	var closest_point: Vector2 = \
 		Geometry2D.get_closest_point_to_segment(
 			goalkeeper.global_position,
 			previous_position,
 			global_position
 		)
 
-	# Only an active, correctly aimed save can
-	# stop the incoming shot.
-	if goalkeeper.can_block_ball(closest_point):
+	# Approximate height at the closest point.
+	var movement: Vector2 = \
+		global_position - previous_position
+
+	var segment_length_squared: float = \
+		movement.length_squared()
+
+	var contact_fraction: float = 0.0
+
+	if segment_length_squared > 0.0001:
+		contact_fraction = clampf(
+			(closest_point - previous_position).dot(
+				movement
+			) / segment_length_squared,
+			0.0,
+			1.0
+		)
+
+	var contact_height: float = lerpf(
+		previous_height,
+		ball_height,
+		contact_fraction
+	)
+
+	if goalkeeper.can_block_shot(
+		closest_point,
+		contact_height
+	):
 		global_position = closest_point
+		ball_height = 0.0
 		make_rebound()
 		return
 
-	# Check if the ball reached the goal line.
+	# Goal mouth and crossbar checks.
 	if position.y <= GOAL_Y + 0.01:
-		if position.x >= GOAL_LEFT \
-		and position.x <= GOAL_RIGHT:
-			print("GOAL!")
+		if position.x < GOAL_LEFT \
+		or position.x > GOAL_RIGHT:
+			print("WIDE!")
+		elif ball_height > GOAL_BAR_HEIGHT:
+			print("OVER THE CROSSBAR!")
 		else:
-			print("WIDE! Shot missed the goal.")
+			print("GOAL!")
 
 		phase = Phase.FINISHED
 
 
 func make_rebound() -> void:
 	phase = Phase.REBOUND
-
-	# Rebound generally travels away from goal.
-	# The chosen save direction influences
-	# which side the ball travels toward.
+	ball_height = 0.0
 
 	var clearance_direction: Vector2 = (
 		Vector2.DOWN * 0.85 +
 		goalkeeper.save_direction * 0.35
 	).normalized()
 
+	rebound_velocity = (
+		clearance_direction * rebound_speed
+	)
 
-	rebound_velocity = clearance_direction * rebound_speed
-
-	print("SAVED! Ball is still in play!")
+	print("SAVED! REBOUND!")
 
 
 func process_rebound(delta: float) -> void:
-	# Move the ball across the turf.
 	position += rebound_velocity * delta
 
-	# Gradually slow it down.
 	rebound_velocity = rebound_velocity.move_toward(
 		Vector2.ZERO,
 		rebound_friction * delta
 	)
 
-	# Keep rebound within the game window.
 	position.x = clampf(
 		position.x,
 		BALL_RADIUS,
@@ -199,7 +274,7 @@ func process_rebound(delta: float) -> void:
 	if rebound_velocity.length() < 1.0:
 		rebound_velocity = Vector2.ZERO
 		phase = Phase.FINISHED
-		print("Rebound stopped. Press R to reset.")
+		print("Rebound stopped. Press R.")
 
 
 func reset_corner() -> void:
@@ -207,22 +282,40 @@ func reset_corner() -> void:
 	position = INJECT_POSITION
 	target = STOP_POSITION
 	stop_timer = 0.0
+
+	ball_height = 0.0
+	peak_height = 0.0
 	rebound_velocity = Vector2.ZERO
 
 	goalkeeper.reset_keeper()
+	queue_redraw()
 
-	print("Reset! Press SPACE to start.")
+	print("Press SPACE to start.")
 
 
 func _draw() -> void:
+	# Ground shadow marks actual pitch location.
+	if ball_height > 1.0:
+		draw_circle(
+			Vector2.ZERO,
+			BALL_RADIUS,
+			Color(0.0, 0.0, 0.0, 0.35)
+		)
+
+	# Elevated ball appears above its shadow.
+	var visual_offset := Vector2(
+		0.0,
+		-ball_height * 0.35
+	)
+
 	draw_circle(
-		Vector2.ZERO,
+		visual_offset,
 		BALL_RADIUS,
 		Color.WHITE
 	)
 
 	draw_arc(
-		Vector2.ZERO,
+		visual_offset,
 		BALL_RADIUS,
 		0.0,
 		TAU,
