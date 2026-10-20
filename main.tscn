@@ -2,6 +2,7 @@
 
 [ext_resource type="PackedScene" uid="uid://cxrb06gjl3lys" path="res://goalkeeper.tscn" id="1_ig7tw"]
 [ext_resource type="Script" uid="uid://7wf286hg7r1g" path="res://pitch.gd" id="2_1bvp3"]
+[ext_resource type="PackedScene" uid="uid://d1ywy2ww7cesp" path="res://ball.tscn" id="3_h2yge"]
 
 [node name="Main" type="Node2D" unique_id=1500434153]
 
@@ -10,3 +11,5 @@ script = ExtResource("2_1bvp3")
 
 [node name="Goalkeeper" parent="." unique_id=937516802 instance=ExtResource("1_ig7tw")]
 position = Vector2(640, 75)
+
+[node name="Ball" parent="." unique_id=1776875399 instance=ExtResource("3_h2yge")]
