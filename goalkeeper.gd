@@ -4,7 +4,8 @@ extends CharacterBody2D
 signal save_attempted(kind: String)
 
 @export var speed: float = 320.0
-@export var dive_speed: float = 650.0
+@export var dive_speed: float = 550.0
+@export var max_dive_distance: float = 110.0
 
 const FIELD_MIN := Vector2(45, 45)
 const FIELD_MAX := Vector2(1235, 675)
@@ -26,6 +27,9 @@ var state := State.READY
 var state_timer := 0.0
 var dive_direction := Vector2.ZERO
 var recovery_duration := 0.0
+var dive_start_position := Vector2.ZERO
+var dive_target := Vector2.ZERO
+
 
 
 func _physics_process(delta: float) -> void:
@@ -41,13 +45,27 @@ func _physics_process(delta: float) -> void:
 			if state_timer <= 0.0:
 				start_recovery(QUICK_RECOVERY)
 
+		
+ 		
 		State.DIVING:
-			velocity = dive_direction * dive_speed
-			move_and_slide()
+			var remaining := global_position.distance_to(
+				dive_target
+			)
+
+			if remaining > 1.0:
+				velocity = dive_direction * min(
+					dive_speed,
+					remaining / delta
+				)
+				move_and_slide()
+			else:
+				velocity = Vector2.ZERO
+
 			state_timer -= delta
 
-			if state_timer <= 0.0:
+			if state_timer <= 0.0 or remaining <= 1.0:
 				start_recovery(DIVE_RECOVERY)
+
 
 		State.RECOVERING:
 			velocity = Vector2.ZERO
@@ -96,6 +114,7 @@ func start_quick_save() -> void:
 	print("Quick save!")
 
 
+
 func start_dive() -> void:
 	var mouse_direction := (
 		get_global_mouse_position() - global_position
@@ -105,11 +124,19 @@ func start_dive() -> void:
 		return
 
 	dive_direction = mouse_direction
+	dive_start_position = global_position
+
+	dive_target = (
+		dive_start_position +
+		dive_direction * max_dive_distance
+	).clamp(FIELD_MIN, FIELD_MAX)
+
 	state = State.DIVING
 	state_timer = DIVE_DURATION
 
 	save_attempted.emit("dive")
-	print("Diving!")
+	print("Short dive!")
+
 
 
 func start_recovery(duration: float) -> void:
@@ -138,6 +165,9 @@ func reset_keeper() -> void:
 	state_timer = 0.0
 	velocity = Vector2.ZERO
 	global_position = Vector2(640, 75)
+	dive_direction = Vector2.ZERO
+	dive_start_position = global_position
+	dive_target = global_position
 
 
 func _draw() -> void:
