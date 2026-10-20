@@ -51,8 +51,8 @@ func _draw() -> void:
 
 		points.append(
 			Vector2(
-				FIELD_WIDTH / 2.0 + cos(angle) * 260.0,
-				30.0 + sin(angle) * 260.0
+				FIELD_WIDTH / 2.0 + cos(angle) * 295.0,
+				30.0 + sin(angle) * 295.0
 			)
 		)
 

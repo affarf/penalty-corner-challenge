@@ -29,6 +29,7 @@ var dive_direction := Vector2.ZERO
 var recovery_duration := 0.0
 var dive_start_position := Vector2.ZERO
 var dive_target := Vector2.ZERO
+var save_direction := Vector2.UP
 
 
 
@@ -105,13 +106,22 @@ func handle_movement() -> void:
 	move_and_slide()
 
 
+
 func start_quick_save() -> void:
+	var mouse_direction := (
+		get_global_mouse_position() - global_position
+	).normalized()
+
+	if mouse_direction.length() > 0.01:
+		save_direction = mouse_direction
+
 	state = State.QUICK_SAVE
 	state_timer = QUICK_DURATION
 	velocity = Vector2.ZERO
 
 	save_attempted.emit("quick")
-	print("Quick save!")
+	print("Directional quick save!")
+
 
 
 
@@ -124,6 +134,7 @@ func start_dive() -> void:
 		return
 
 	dive_direction = mouse_direction
+	save_direction = mouse_direction
 	dive_start_position = global_position
 
 	dive_target = (
@@ -168,6 +179,7 @@ func reset_keeper() -> void:
 	dive_direction = Vector2.ZERO
 	dive_start_position = global_position
 	dive_target = global_position
+	save_direction = Vector2.UP
 
 
 func _draw() -> void:
@@ -202,3 +214,26 @@ func _draw() -> void:
 			Color.WHITE,
 			4.0
 		)
+		
+
+func can_block_ball(ball_position: Vector2) -> bool:
+	if not can_save():
+		return false
+
+	var to_ball := ball_position - global_position
+	var distance := to_ball.length()
+
+	if distance > get_save_reach() + 8.0:
+		return false
+
+	# Very close balls can be blocked in either direction.
+	if distance < 18.0:
+		return true
+
+	var ball_direction := to_ball.normalized()
+
+	# A positive dot product means the ball is
+	# generally in front of the chosen save direction.
+	var alignment := save_direction.dot(ball_direction)
+
+	return alignment >= 0.35
