@@ -64,22 +64,31 @@ func _physics_process(delta: float) -> void:
 				phase = Phase.SHOOTING
 				print("Shot!")
 
+		
 		Phase.SHOOTING:
 			position = position.move_toward(
 				target,
 				shot_speed * delta
 			)
 
-			# Temporary goalkeeper save detection.
-			if position.distance_to(
-				goalkeeper.global_position
-			) < 32.0:
+			var distance_to_keeper := \
+				global_position.distance_to(
+					goalkeeper.global_position
+				)
+
+			var save_reach: float = \
+				goalkeeper.get_save_reach()
+
+			if goalkeeper.can_save() \
+			and distance_to_keeper <= save_reach + 8.0:
 				phase = Phase.FINISHED
-				print("SAVED!")
+				print("SAVED! Great reaction!")
 
 			elif position.y <= GOAL_Y + 1.0:
 				phase = Phase.FINISHED
 				print("GOAL!")
+
+
 
 
 func reset_corner() -> void:
@@ -87,7 +96,11 @@ func reset_corner() -> void:
 	position = INJECT_POSITION
 	target = STOP_POSITION
 	stop_timer = 0.0
+
+	goalkeeper.reset_keeper()
+
 	print("Corner reset. Press SPACE to start.")
+
 
 
 func _draw() -> void:

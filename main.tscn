@@ -13,3 +13,5 @@ script = ExtResource("2_1bvp3")
 position = Vector2(640, 75)
 
 [node name="Ball" parent="." unique_id=1776875399 instance=ExtResource("3_h2yge")]
+injection_speed = null
+shot_speed = null
