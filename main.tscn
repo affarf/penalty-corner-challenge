@@ -4,6 +4,7 @@
 [ext_resource type="Script" uid="uid://7wf286hg7r1g" path="res://pitch.gd" id="2_1bvp3"]
 [ext_resource type="PackedScene" uid="uid://d1ywy2ww7cesp" path="res://ball.tscn" id="3_h2yge"]
 [ext_resource type="PackedScene" uid="uid://4hvo5fklnn6y" path="res://defensive_runner.tscn" id="4_1bvp3"]
+[ext_resource type="Script" uid="uid://dpbycla0w203i" path="res://hud.gd" id="5_lquwl"]
 
 [node name="Main" type="Node2D" unique_id=1500434153]
 
@@ -16,3 +17,6 @@ position = Vector2(640, 75)
 [node name="Ball" parent="." unique_id=1776875399 instance=ExtResource("3_h2yge")]
 
 [node name="DefensiveRunner" parent="." unique_id=1409312240 instance=ExtResource("4_1bvp3")]
+
+[node name="HUD" type="CanvasLayer" parent="." unique_id=1482612715]
+script = ExtResource("5_lquwl")
