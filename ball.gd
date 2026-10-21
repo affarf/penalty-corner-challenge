@@ -51,8 +51,14 @@ var shot_total_distance: float = 1.0
 
 var rebound_velocity := Vector2.ZERO
 
+signal event_reported(message: String)
+signal corner_finished(result: String)
+
 @onready var goalkeeper = \
 	get_parent().get_node("Goalkeeper")
+	
+@onready var runner: DefensiveRunner = \
+	get_parent().get_node("DefensiveRunner") as DefensiveRunner
 
 
 func _ready() -> void:
@@ -71,10 +77,16 @@ func _unhandled_input(event: InputEvent) -> void:
 				reset_corner()
 
 
+
 func start_corner() -> void:
 	routine = Routine.values().pick_random()
 	phase = Phase.INJECTING
-	print("Penalty corner started!")
+
+	runner.start_run()
+
+	event_reported.emit("Corner injected!")
+	print("Corner started! Runner released!")
+
 
 
 func _physics_process(delta: float) -> void:
@@ -212,6 +224,31 @@ func process_shot(delta: float) -> void:
 		ball_height,
 		contact_fraction
 	)
+	
+	
+	# Check if the first runner blocks the shot.
+	if runner.can_block(
+		previous_position,
+		global_position,
+		contact_height
+	):
+		phase = Phase.REBOUND
+		ball_height = 0.0
+
+		# Simple sideways deflection away
+		# from the original shot path.
+		rebound_velocity = Vector2(
+			320.0,
+			280.0
+		)
+
+		runner.active = false
+
+		corner_finished.emit("BLOCK")
+		event_reported.emit("Runner blocked the shot!")
+		print("FIRST RUNNER BLOCK!")
+		return
+
 
 	if goalkeeper.can_block_shot(
 		closest_point,
@@ -220,19 +257,31 @@ func process_shot(delta: float) -> void:
 		global_position = closest_point
 		ball_height = 0.0
 		make_rebound()
+		corner_finished.emit("SAVE")
+		event_reported.emit("Goalkeeper save!")
 		return
 
 	# Goal mouth and crossbar checks.
+
 	if position.y <= GOAL_Y + 0.01:
 		if position.x < GOAL_LEFT \
 		or position.x > GOAL_RIGHT:
 			print("WIDE!")
+			corner_finished.emit("MISS")
+			event_reported.emit("Shot missed!")
+
 		elif ball_height > GOAL_BAR_HEIGHT:
 			print("OVER THE CROSSBAR!")
+			corner_finished.emit("MISS")
+			event_reported.emit("Over the crossbar!")
+
 		else:
 			print("GOAL!")
+			corner_finished.emit("GOAL")
+			event_reported.emit("Goal conceded!")
 
 		phase = Phase.FINISHED
+
 
 
 func make_rebound() -> void:
@@ -289,8 +338,11 @@ func reset_corner() -> void:
 
 	goalkeeper.reset_keeper()
 	queue_redraw()
+	runner.reset_runner()
+	event_reported.emit("Press SPACE to start")
 
 	print("Press SPACE to start.")
+	
 
 
 func _draw() -> void:

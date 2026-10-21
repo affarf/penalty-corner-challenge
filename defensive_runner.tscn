@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://4hvo5fklnn6y"]
+
+[ext_resource type="Script" uid="uid://b6d1uuthpnm2j" path="res://defensive_runner.gd" id="1_h3mvu"]
+
+[node name="DefensiveRunner" type="Node2D" unique_id=1409312240]
+script = ExtResource("1_h3mvu")
