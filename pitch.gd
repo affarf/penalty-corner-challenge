@@ -66,15 +66,3 @@ func _draw() -> void:
 	)
 	
 	
-	# Attacking players (temporary markers)
-	draw_circle(
-		Vector2(640, 340),
-		16.0,
-		Color.ORANGE
-	)
-
-	draw_circle(
-		Vector2(830, 310),
-		16.0,
-		Color.ORANGE_RED
-	)

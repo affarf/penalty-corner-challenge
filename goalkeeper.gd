@@ -215,6 +215,28 @@ func _draw() -> void:
 			4.0
 		)
 		
+	if state == State.DIVING:
+		# Draw a long body shape in the dive direction.
+		var forward: Vector2 = dive_direction.normalized()
+		var sideways: Vector2 = Vector2(
+			-forward.y,
+			forward.x
+		)
+
+		var body_points := PackedVector2Array([
+			forward * 34.0 + sideways * 10.0,
+			forward * 34.0 - sideways * 10.0,
+			-forward * 10.0 - sideways * 10.0,
+			-forward * 10.0 + sideways * 10.0
+		])
+
+		draw_colored_polygon(
+			body_points,
+			Color.ORANGE
+		)
+
+
+		
 
 func can_block_ball(ball_position: Vector2) -> bool:
 	if not can_save():

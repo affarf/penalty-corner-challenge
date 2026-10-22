@@ -1,6 +1,5 @@
-
+class_name CornerBall
 extends Node2D
-
 
 enum Phase {
 	READY,
@@ -77,7 +76,6 @@ signal corner_finished(result: String)
 	
 @onready var runner: DefensiveRunner = \
 	get_parent().get_node("DefensiveRunner") as DefensiveRunner
-
 
 func _ready() -> void:
 	position = INJECT_POSITION
