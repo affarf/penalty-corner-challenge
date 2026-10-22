@@ -1,6 +1,7 @@
 
 extends Node2D
 
+
 enum Phase {
 	READY,
 	INJECTING,
@@ -8,13 +9,18 @@ enum Phase {
 	PASSING,
 	SHOOTING,
 	REBOUND,
-	FINISHED
+	FINISHED,
+	FAKING
 }
+
+
 
 enum Routine {
 	DIRECT,
-	SLIP_PASS
+	SLIP_PASS,
+	FAKE_SHOT
 }
+
 
 enum ShotType {
 	LOW,
@@ -44,6 +50,18 @@ var shot_type := ShotType.LOW
 var target: Vector2 = STOP_POSITION
 var stop_timer := 0.0
 
+
+enum Difficulty {
+	EASY,
+	NORMAL,
+	HARD
+}
+
+var difficulty: Difficulty = Difficulty.NORMAL
+var fake_timer: float = 0.0
+var shot_speed_multiplier: float = 1.0
+
+
 var ball_height: float = 0.0
 var peak_height: float = 0.0
 var shot_start_position := Vector2.ZERO
@@ -66,26 +84,42 @@ func _ready() -> void:
 	queue_redraw()
 
 
+
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey:
-		if event.pressed and not event.echo:
-			if event.keycode == KEY_SPACE:
+		if not event.pressed or event.echo:
+			return
+
+		match event.keycode:
+			KEY_SPACE:
 				if phase == Phase.READY:
 					start_corner()
 
-			elif event.keycode == KEY_R:
+			KEY_R:
 				reset_corner()
+
+			KEY_1:
+				set_difficulty(Difficulty.EASY)
+
+			KEY_2:
+				set_difficulty(Difficulty.NORMAL)
+
+			KEY_3:
+				set_difficulty(Difficulty.HARD)
+
+
 
 
 
 func start_corner() -> void:
-	routine = Routine.values().pick_random()
+	routine = randi_range(0, 2)
 	phase = Phase.INJECTING
 
 	runner.start_run()
 
 	event_reported.emit("Corner injected!")
-	print("Corner started! Runner released!")
+	print("Corner started!")
+
 
 
 
@@ -102,15 +136,26 @@ func _physics_process(delta: float) -> void:
 				stop_timer = 0.45
 				print("Ball trapped outside the D!")
 
+
 		Phase.STOPPED:
 			stop_timer -= delta
 
 			if stop_timer <= 0.0:
-				if routine == Routine.DIRECT:
-					begin_shot()
-				else:
-					phase = Phase.PASSING
-					print("Slip pass!")
+				match routine:
+					Routine.DIRECT:
+						begin_shot()
+
+					Routine.SLIP_PASS:
+						phase = Phase.PASSING
+						print("Slip pass!")
+
+					Routine.FAKE_SHOT:
+						phase = Phase.FAKING
+						fake_timer = 0.65
+						event_reported.emit(
+                            "Attacker preparing to shoot..."
+						)
+
 
 		Phase.PASSING:
 			position = position.move_toward(
@@ -129,6 +174,14 @@ func _physics_process(delta: float) -> void:
 
 		Phase.FINISHED:
 			pass
+		
+		
+		Phase.FAKING:
+			fake_timer -= delta
+
+			if fake_timer <= 0.0:
+				begin_shot()
+
 
 	queue_redraw()
 
@@ -170,10 +223,12 @@ func process_shot(delta: float) -> void:
 		(target - position).normalized()
 
 	# Move toward goal.
+
 	position = position.move_toward(
 		target,
-		shot_speed * delta
+		shot_speed * shot_speed_multiplier * delta
 	)
+
 
 	# Simulate height for elevated drag flicks.
 	var distance_travelled: float = \
@@ -375,3 +430,28 @@ func _draw() -> void:
 		Color.DARK_GRAY,
 		1.5
 	)
+
+
+func set_difficulty(level: Difficulty) -> void:
+	if phase != Phase.READY:
+		return
+
+	difficulty = level
+
+	match difficulty:
+		Difficulty.EASY:
+			shot_speed_multiplier = 0.70
+
+		Difficulty.NORMAL:
+			shot_speed_multiplier = 1.0
+
+		Difficulty.HARD:
+			shot_speed_multiplier = 1.25
+
+	var names := ["EASY", "NORMAL", "HARD"]
+	var selected_name: String = names[difficulty]
+
+	event_reported.emit(
+		"Difficulty: " + selected_name
+	)
+	print("Difficulty changed to ", selected_name)

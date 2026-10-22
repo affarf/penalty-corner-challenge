@@ -33,7 +33,7 @@ func _ready() -> void:
 	column.add_child(scoreboard)
 
 	message_label = Label.new()
-	message_label.text = "Press SPACE to start"
+	message_label.text = "1 Easy | 2 Normal | 3 Hard | SPACE Start"
 	message_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	column.add_child(message_label)
 
