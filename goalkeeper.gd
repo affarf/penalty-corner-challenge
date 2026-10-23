@@ -263,44 +263,132 @@ func release_from_line() -> void:
 	print("Ball injected! Goalkeeper released.")
 
 
+
 func _draw() -> void:
-	var body_color := Color.DODGER_BLUE
+	var suit_color := Color("#268DF2")
 
 	match state:
 		State.QUICK_SAVE:
-			body_color = Color.YELLOW
+			suit_color = Color("#F0D151")
 		State.DIVING:
-			body_color = Color.ORANGE
+			suit_color = Color("#F59C38")
 		State.RECOVERING:
-			body_color = Color.GRAY
+			suit_color = Color("#929BA4")
 
-	draw_circle(Vector2.ZERO, 24.0, body_color)
+	# Dark shadow beneath the keeper
+	draw_circle(
+		Vector2(3, 6),
+		30.0,
+		Color(0, 0, 0, 0.25)
+	)
 
-	draw_arc(
+	# Rotate the drawn body during a dive.
+	# This does not rotate the physics body.
+	var visual_angle: float = 0.0
+
+	if state == State.DIVING:
+		visual_angle = Vector2.DOWN.angle_to(
+			dive_direction
+		)
+
+	draw_set_transform(
 		Vector2.ZERO,
-		get_save_reach(),
+		visual_angle,
+		Vector2.ONE
+	)
+
+	# Leg guards
+	draw_rect(
+		Rect2(-22, 3, 17, 29),
+		Color("#E8AC3D")
+	)
+	draw_rect(
+		Rect2(5, 3, 17, 29),
+		Color("#E8AC3D")
+	)
+
+	# Kickers
+	draw_rect(
+		Rect2(-26, 27, 21, 12),
+		Color("#CC8C2E")
+	)
+	draw_rect(
+		Rect2(5, 27, 21, 12),
+		Color("#CC8C2E")
+	)
+
+	# Body protector
+	draw_rect(
+		Rect2(-19, -21, 38, 40),
+		suit_color
+	)
+
+	# Gloves
+	draw_circle(
+		Vector2(-28, -5),
+		11.0,
+		Color("#E8AC3D")
+	)
+	draw_circle(
+		Vector2(28, -5),
+		11.0,
+		Color("#E8AC3D")
+	)
+
+	# Goalkeeper stick
+	draw_line(
+		Vector2(32, -5),
+		Vector2(44, 31),
+		Color("#F5DCA8"),
+		5.0
+	)
+	draw_line(
+		Vector2(44, 31),
+		Vector2(34, 37),
+		Color("#F5DCA8"),
+		5.0
+	)
+
+	# Helmet
+	draw_circle(
+		Vector2(0, -26),
+		16.0,
+		Color("#173C62")
+	)
+	draw_arc(
+		Vector2(0, -26),
+		16.0,
 		0.0,
 		TAU,
-		40,
+		24,
 		Color.WHITE,
 		2.0
 	)
 
-	if state == State.DIVING:
-		var forward: Vector2 = dive_direction.normalized()
-		var sideways: Vector2 = Vector2(
-			-forward.y,
-			forward.x
+	# Helmet grille
+	for x in [-8.0, 0.0, 8.0]:
+		draw_line(
+			Vector2(x, -37),
+			Vector2(x, -15),
+			Color.WHITE,
+			1.5
 		)
 
-		var body_points := PackedVector2Array([
-			forward * 34.0 + sideways * 10.0,
-			forward * 34.0 - sideways * 10.0,
-			-forward * 10.0 - sideways * 10.0,
-			-forward * 10.0 + sideways * 10.0
-		])
+	# Restore default drawing transform
+	draw_set_transform(
+		Vector2.ZERO,
+		0.0,
+		Vector2.ONE
+	)
 
-		draw_colored_polygon(
-			body_points,
-			Color.ORANGE
+	# Only show save coverage when active
+	if can_save():
+		draw_arc(
+			Vector2.ZERO,
+			get_save_reach(),
+			0.0,
+			TAU,
+			40,
+			Color(1, 1, 1, 0.40),
+			2.0
 		)

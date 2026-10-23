@@ -418,21 +418,28 @@ func reset_corner() -> void:
 	
 
 
-func _draw() -> void:
-	# Ground shadow marks actual pitch location.
-	if ball_height > 1.0:
-		draw_circle(
-			Vector2.ZERO,
-			BALL_RADIUS,
-			Color(0.0, 0.0, 0.0, 0.35)
-		)
 
-	# Elevated ball appears above its shadow.
-	var visual_offset := Vector2(
+func _draw() -> void:
+	var height_ratio: float = clampf(
+		ball_height / 145.0,
 		0.0,
-		-ball_height * 0.35
+		1.0
 	)
 
+	# Shadow remains at the true ground position.
+	draw_circle(
+		Vector2(4, 5),
+		9.0 + height_ratio * 3.0,
+		Color(0, 0, 0, 0.45)
+	)
+
+	# Aerial ball is visually displaced
+	var visual_offset := Vector2(
+		0.0,
+		-ball_height * 0.55
+	)
+
+	# Ball body
 	draw_circle(
 		visual_offset,
 		BALL_RADIUS,
@@ -445,9 +452,31 @@ func _draw() -> void:
 		0.0,
 		TAU,
 		24,
-		Color.DARK_GRAY,
+		Color("#384C51"),
 		1.5
 	)
+
+	# Height meter appears for elevated shots.
+	if ball_height > 2.0:
+		var meter_position := Vector2(19, -24)
+
+		draw_rect(
+			Rect2(meter_position, Vector2(5, 32)),
+			Color(0, 0, 0, 0.5)
+		)
+
+		var filled: float = height_ratio * 32.0
+
+		draw_rect(
+			Rect2(
+				meter_position.x,
+				meter_position.y + 32.0 - filled,
+				5.0,
+				filled
+			),
+			Color("#FFD166")
+		)
+
 
 
 func set_difficulty(level: Difficulty) -> void:
