@@ -74,13 +74,25 @@ var rebound_velocity := Vector2.ZERO
 signal event_reported(message: String)
 signal corner_finished(result: String)
 
-@onready var goalkeeper = \
-	get_parent().get_node("Goalkeeper")
-	
-@onready var runner: DefensiveRunner = \
-	get_parent().get_node("DefensiveRunner") as DefensiveRunner
+
+
+@onready var goalkeeper = get_parent().get_node("Goalkeeper")
+@onready var runner = get_parent().get_node("DefensiveRunner")
+
+
 
 func _ready() -> void:
+	
+	assert(
+		goalkeeper != null,
+        "Goalkeeper not found! Check GameWorld children."
+	)
+
+	assert(
+		runner != null,
+        "DefensiveRunner not found! Check GameWorld children."
+	)
+
 	position = INJECT_POSITION
 	queue_redraw()
 
@@ -462,10 +474,19 @@ func set_difficulty(level: Difficulty) -> void:
 	)
 	print("Difficulty changed to ", selected_name)
 	
+
 func set_session_enabled(enabled: bool) -> void:
 	session_enabled = enabled
 
 	if not enabled:
 		phase = Phase.READY
-		goalkeeper.reset_keeper()
-		runner.reset_runner()
+
+		if is_instance_valid(goalkeeper):
+			goalkeeper.reset_keeper()
+		else:
+			push_error("Goalkeeper reference is missing!")
+
+		if is_instance_valid(runner):
+			runner.reset_runner()
+		else:
+			push_error("DefensiveRunner reference is missing!")

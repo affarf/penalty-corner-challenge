@@ -9,18 +9,21 @@
 
 [node name="Main" type="Node2D" unique_id=1500434153]
 
-[node name="Pitch" type="Node2D" parent="." unique_id=1449575496]
-script = ExtResource("2_1bvp3")
-
-[node name="AttackersVisuals" type="Node2D" parent="." unique_id=837210081]
-script = ExtResource("6_7mycd")
-
-[node name="DefensiveRunner" parent="." unique_id=1409312240 instance=ExtResource("4_1bvp3")]
-
-[node name="Goalkeeper" parent="." unique_id=937516802 instance=ExtResource("1_ig7tw")]
-position = Vector2(640, 75)
-
-[node name="Ball" parent="." unique_id=1776875399 instance=ExtResource("3_h2yge")]
-
 [node name="HUD" type="CanvasLayer" parent="." unique_id=1482612715]
 script = ExtResource("5_lquwl")
+
+[node name="GameWorld" type="Node2D" parent="." unique_id=2084330024]
+position = Vector2(0, 140)
+
+[node name="Pitch" type="Node2D" parent="GameWorld" unique_id=1449575496]
+script = ExtResource("2_1bvp3")
+
+[node name="AttackersVisuals" type="Node2D" parent="GameWorld" unique_id=837210081]
+script = ExtResource("6_7mycd")
+
+[node name="DefensiveRunner" parent="GameWorld" unique_id=1409312240 instance=ExtResource("4_1bvp3")]
+
+[node name="Goalkeeper" parent="GameWorld" unique_id=937516802 instance=ExtResource("1_ig7tw")]
+position = Vector2(640, 75)
+
+[node name="Ball" parent="GameWorld" unique_id=1776875399 instance=ExtResource("3_h2yge")]

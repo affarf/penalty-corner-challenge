@@ -21,7 +21,8 @@ var results_overlay: ColorRect
 var results_label: Label
 var difficulty_select: OptionButton
 
-@onready var ball = get_parent().get_node("Ball")
+@onready var ball = \
+	get_parent().get_node("GameWorld/Ball")
 
 
 func _ready() -> void:
@@ -64,29 +65,36 @@ func make_button(
 	return button
 
 
+
+
 func build_hud() -> void:
-	var panel := PanelContainer.new()
-	panel.position = Vector2(15, 12)
-	panel.custom_minimum_size = Vector2(590, 115)
-	add_child(panel)
+	var bar := PanelContainer.new()
+	bar.position = Vector2(0, 0)
+	bar.custom_minimum_size = Vector2(1280, 140)
+	add_child(bar)
 
 	var column := VBoxContainer.new()
-	panel.add_child(column)
+	column.add_theme_constant_override(
+		"separation", 5
+	)
+	bar.add_child(column)
 
 	column.add_child(
-		make_label("PENALTY CORNER CHALLENGE", 20)
+		make_label("PENALTY CORNER CHALLENGE", 25)
 	)
 
-	progress_label = make_label("CORNER 1 / 10", 17)
+	progress_label = make_label("CORNER 1 / 10", 21)
 	column.add_child(progress_label)
 
-	scoreboard = make_label("", 16)
+	scoreboard = make_label("", 18)
 	column.add_child(scoreboard)
 
 	message_label = make_label(
-		"Press SPACE to start", 15
+		"Press SPACE to inject", 17
 	)
 	column.add_child(message_label)
+
+
 
 
 func make_overlay() -> ColorRect:

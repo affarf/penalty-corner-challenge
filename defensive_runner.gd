@@ -17,7 +17,7 @@ func _ready() -> void:
 
 
 func start_run() -> void:
-	global_position = START_POSITION
+	position = START_POSITION
 	running = true
 	active = true
 
@@ -25,7 +25,7 @@ func start_run() -> void:
 func reset_runner() -> void:
 	running = false
 	active = false
-	global_position = START_POSITION
+	position = START_POSITION
 	queue_redraw()
 
 
@@ -33,12 +33,12 @@ func _physics_process(delta: float) -> void:
 	if not running:
 		return
 
-	global_position = global_position.move_toward(
+	position = position.move_toward(
 		BLOCK_POSITION,
 		run_speed * delta
 	)
 
-	if global_position.distance_to(
+	if position.distance_to(
 		BLOCK_POSITION
 	) < 1.0:
 		running = false

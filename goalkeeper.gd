@@ -9,16 +9,13 @@ signal save_attempted(kind: String)
 
 const FIELD_MIN := Vector2(45, 45)
 const FIELD_MAX := Vector2(1235, 675)
+const START_POSITION := Vector2(640, 50)
 
 const QUICK_DURATION := 0.20
 const QUICK_RECOVERY := 0.25
 
-const DIVE_DURATION := 0.35
-const DIVE_RECOVERY := 0.80
-
-const START_POSITION := Vector2(640, 50)
-
-var corner_released: bool = false
+const DIVE_DURATION := 0.25
+const DIVE_RECOVERY := 0.65
 
 enum State {
 	READY,
@@ -27,22 +24,27 @@ enum State {
 	RECOVERING
 }
 
-var state := State.READY
-var state_timer := 0.0
-var dive_direction := Vector2.ZERO
-var recovery_duration := 0.0
-var dive_start_position := Vector2.ZERO
-var dive_target := Vector2.ZERO
-var save_direction := Vector2.UP
+var state: State = State.READY
+var state_timer: float = 0.0
+
+var corner_released: bool = false
+
+var dive_direction: Vector2 = Vector2.ZERO
+var dive_target: Vector2 = Vector2.ZERO
+var save_direction: Vector2 = Vector2.UP
 var last_move_direction: Vector2 = Vector2.LEFT
 
 
+func _ready() -> void:
+	reset_keeper()
+
 
 func _physics_process(delta: float) -> void:
-	
+	# Stay behind the goal line before injection.
 	if not corner_released:
 		velocity = Vector2.ZERO
-		global_position = START_POSITION
+		position = START_POSITION
+		queue_redraw()
 		return
 
 	match state:
@@ -51,18 +53,15 @@ func _physics_process(delta: float) -> void:
 
 		State.QUICK_SAVE:
 			velocity = Vector2.ZERO
-			move_and_slide()
 			state_timer -= delta
 
 			if state_timer <= 0.0:
 				start_recovery(QUICK_RECOVERY)
 
-		
- 		
-
 		State.DIVING:
-			var remaining: float = \
-				global_position.distance_to(dive_target)
+			var remaining: float = position.distance_to(
+				dive_target
+			)
 
 			if remaining > 1.0:
 				velocity = dive_direction * minf(
@@ -78,8 +77,6 @@ func _physics_process(delta: float) -> void:
 			if state_timer <= 0.0:
 				start_recovery(DIVE_RECOVERY)
 
-
-
 		State.RECOVERING:
 			velocity = Vector2.ZERO
 			state_timer -= delta
@@ -87,7 +84,8 @@ func _physics_process(delta: float) -> void:
 			if state_timer <= 0.0:
 				state = State.READY
 
-	global_position = global_position.clamp(
+	# Restrict the keeper to the local pitch.
+	position = position.clamp(
 		FIELD_MIN,
 		FIELD_MAX
 	)
@@ -98,7 +96,7 @@ func _physics_process(delta: float) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not corner_released:
 		return
-		
+
 	if state != State.READY:
 		return
 
@@ -110,24 +108,22 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func handle_movement() -> void:
-	var direction := Input.get_vector(
+	var direction: Vector2 = Input.get_vector(
 		"move_left",
 		"move_right",
 		"move_up",
         "move_down"
 	)
-	
+
 	if direction.length() > 0.01:
 		last_move_direction = direction.normalized()
-
 
 	velocity = direction * speed
 	move_and_slide()
 
 
-
 func start_quick_save() -> void:
-	var mouse_direction := (
+	var mouse_direction: Vector2 = (
 		get_global_mouse_position() - global_position
 	).normalized()
 
@@ -139,13 +135,11 @@ func start_quick_save() -> void:
 	velocity = Vector2.ZERO
 
 	save_attempted.emit("quick")
-	print("Directional quick save!")
-
-
-
+	print("Quick save!")
 
 
 func start_dive() -> void:
+	# Dive direction comes from WASD, not mouse.
 	var direction: Vector2 = Input.get_vector(
 		"move_left",
 		"move_right",
@@ -159,11 +153,9 @@ func start_dive() -> void:
 	dive_direction = direction.normalized()
 	save_direction = dive_direction
 
-	dive_start_position = global_position
-
+	# Local coordinates keep the dive on the pitch.
 	dive_target = (
-		dive_start_position +
-		dive_direction * max_dive_distance
+		position + dive_direction * max_dive_distance
 	).clamp(FIELD_MIN, FIELD_MAX)
 
 	state = State.DIVING
@@ -174,12 +166,11 @@ func start_dive() -> void:
 	print("Diving!")
 
 
-
-
 func start_recovery(duration: float) -> void:
 	state = State.RECOVERING
 	state_timer = duration
-	recovery_duration = duration
+	velocity = Vector2.ZERO
+
 
 func can_save() -> bool:
 	return state == State.QUICK_SAVE \
@@ -188,92 +179,20 @@ func can_save() -> bool:
 
 func get_save_reach() -> float:
 	if state == State.DIVING:
-		return 46.0
+		return 65.0
 
 	if state == State.QUICK_SAVE:
-		return 38.0
+		return 42.0
 
 	return 24.0
-
-
-func reset_keeper() -> void:
-	state = State.READY
-	state_timer = 0.0
-	velocity = Vector2.ZERO
-	global_position = START_POSITION
-	dive_direction = Vector2.ZERO
-	dive_start_position = global_position
-	dive_target = global_position
-	save_direction = Vector2.UP
-	corner_released = false
-	last_move_direction = Vector2.LEFT
-
-
-func _draw() -> void:
-	var body_color := Color.DODGER_BLUE
-
-	match state:
-		State.QUICK_SAVE:
-			body_color = Color.YELLOW
-
-		State.DIVING:
-			body_color = Color.ORANGE
-
-		State.RECOVERING:
-			body_color = Color.GRAY
-
-	draw_circle(Vector2.ZERO, 24.0, body_color)
-
-	draw_arc(
-		Vector2.ZERO,
-		get_save_reach(),
-		0.0,
-		TAU,
-		40,
-		Color.WHITE,
-		2.0
-	)
-
-	if state == State.DIVING:
-		draw_line(
-			Vector2.ZERO,
-			dive_direction * 55.0,
-			Color.WHITE,
-			4.0
-		)
-		
-	if state == State.DIVING:
-		# Draw a long body shape in the dive direction.
-		var forward: Vector2 = dive_direction.normalized()
-		var sideways: Vector2 = Vector2(
-			-forward.y,
-			forward.x
-		)
-
-		var body_points := PackedVector2Array([
-			forward * 34.0 + sideways * 10.0,
-			forward * 34.0 - sideways * 10.0,
-			-forward * 10.0 - sideways * 10.0,
-			-forward * 10.0 + sideways * 10.0
-		])
-
-		draw_colored_polygon(
-			body_points,
-			Color.ORANGE
-		)
-
-
-		
 
 
 func can_block_ball(ball_position: Vector2) -> bool:
 	if not can_save():
 		return false
 
-	var to_ball: Vector2 = (
-		ball_position - global_position
-	)
-
+	# Ball coordinates are global for collision checks.
+	var to_ball: Vector2 = ball_position - global_position
 	var distance: float = to_ball.length()
 
 	if state == State.QUICK_SAVE:
@@ -288,12 +207,10 @@ func can_block_ball(ball_position: Vector2) -> bool:
 		) >= 0.35
 
 	if state == State.DIVING:
-		# Length along the diving direction.
 		var forward: float = to_ball.dot(
 			dive_direction
 		)
 
-		# Width perpendicular to dive direction.
 		var sideways: float = absf(
 			to_ball.cross(dive_direction)
 		)
@@ -306,9 +223,7 @@ func can_block_ball(ball_position: Vector2) -> bool:
 
 	return false
 
-	
-	
-	
+
 func can_block_shot(
 	ball_position: Vector2,
 	ball_height: float
@@ -327,6 +242,65 @@ func can_block_shot(
 			return false
 
 
+func reset_keeper() -> void:
+	state = State.READY
+	state_timer = 0.0
+	velocity = Vector2.ZERO
+
+	position = START_POSITION
+	corner_released = false
+
+	dive_direction = Vector2.ZERO
+	dive_target = position
+	save_direction = Vector2.UP
+	last_move_direction = Vector2.LEFT
+
+	queue_redraw()
+
+
 func release_from_line() -> void:
 	corner_released = true
 	print("Ball injected! Goalkeeper released.")
+
+
+func _draw() -> void:
+	var body_color := Color.DODGER_BLUE
+
+	match state:
+		State.QUICK_SAVE:
+			body_color = Color.YELLOW
+		State.DIVING:
+			body_color = Color.ORANGE
+		State.RECOVERING:
+			body_color = Color.GRAY
+
+	draw_circle(Vector2.ZERO, 24.0, body_color)
+
+	draw_arc(
+		Vector2.ZERO,
+		get_save_reach(),
+		0.0,
+		TAU,
+		40,
+		Color.WHITE,
+		2.0
+	)
+
+	if state == State.DIVING:
+		var forward: Vector2 = dive_direction.normalized()
+		var sideways: Vector2 = Vector2(
+			-forward.y,
+			forward.x
+		)
+
+		var body_points := PackedVector2Array([
+			forward * 34.0 + sideways * 10.0,
+			forward * 34.0 - sideways * 10.0,
+			-forward * 10.0 - sideways * 10.0,
+			-forward * 10.0 + sideways * 10.0
+		])
+
+		draw_colored_polygon(
+			body_points,
+			Color.ORANGE
+		)
