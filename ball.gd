@@ -50,6 +50,7 @@ var shot_type := ShotType.LOW
 
 var target: Vector2 = STOP_POSITION
 var stop_timer := 0.0
+var session_enabled: bool = false
 
 
 enum Difficulty {
@@ -112,6 +113,8 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func start_corner() -> void:
+	if not session_enabled:
+		return
 	routine = randi_range(0, 2)
 	phase = Phase.INJECTING
 	goalkeeper.release_from_line()
@@ -383,6 +386,8 @@ func process_rebound(delta: float) -> void:
 
 
 func reset_corner() -> void:
+	if not session_enabled:
+		return
 	phase = Phase.READY
 	position = INJECT_POSITION
 	target = STOP_POSITION
@@ -456,3 +461,11 @@ func set_difficulty(level: Difficulty) -> void:
 		"Difficulty: " + selected_name
 	)
 	print("Difficulty changed to ", selected_name)
+	
+func set_session_enabled(enabled: bool) -> void:
+	session_enabled = enabled
+
+	if not enabled:
+		phase = Phase.READY
+		goalkeeper.reset_keeper()
+		runner.reset_runner()
