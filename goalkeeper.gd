@@ -4,8 +4,8 @@ extends CharacterBody2D
 signal save_attempted(kind: String)
 
 @export var speed: float = 320.0
-@export var dive_speed: float = 550.0
-@export var max_dive_distance: float = 110.0
+@export var dive_speed: float = 220.0
+@export var max_dive_distance: float = 42.0
 
 const FIELD_MIN := Vector2(45, 45)
 const FIELD_MAX := Vector2(1235, 675)
@@ -34,6 +34,7 @@ var recovery_duration := 0.0
 var dive_start_position := Vector2.ZERO
 var dive_target := Vector2.ZERO
 var save_direction := Vector2.UP
+var last_move_direction: Vector2 = Vector2.LEFT
 
 
 
@@ -58,15 +59,15 @@ func _physics_process(delta: float) -> void:
 
 		
  		
+
 		State.DIVING:
-			var remaining := global_position.distance_to(
-				dive_target
-			)
+			var remaining: float = \
+				global_position.distance_to(dive_target)
 
 			if remaining > 1.0:
-				velocity = dive_direction * min(
+				velocity = dive_direction * minf(
 					dive_speed,
-					remaining / delta
+					remaining / maxf(delta, 0.0001)
 				)
 				move_and_slide()
 			else:
@@ -74,8 +75,9 @@ func _physics_process(delta: float) -> void:
 
 			state_timer -= delta
 
-			if state_timer <= 0.0 or remaining <= 1.0:
+			if state_timer <= 0.0:
 				start_recovery(DIVE_RECOVERY)
+
 
 
 		State.RECOVERING:
@@ -114,6 +116,10 @@ func handle_movement() -> void:
 		"move_up",
         "move_down"
 	)
+	
+	if direction.length() > 0.01:
+		last_move_direction = direction.normalized()
+
 
 	velocity = direction * speed
 	move_and_slide()
@@ -138,16 +144,21 @@ func start_quick_save() -> void:
 
 
 
+
 func start_dive() -> void:
-	var mouse_direction := (
-		get_global_mouse_position() - global_position
-	).normalized()
+	var direction: Vector2 = Input.get_vector(
+		"move_left",
+		"move_right",
+		"move_up",
+        "move_down"
+	)
 
-	if mouse_direction.length() < 0.01:
-		return
+	if direction.length() < 0.01:
+		direction = last_move_direction
 
-	dive_direction = mouse_direction
-	save_direction = mouse_direction
+	dive_direction = direction.normalized()
+	save_direction = dive_direction
+
 	dive_start_position = global_position
 
 	dive_target = (
@@ -157,9 +168,11 @@ func start_dive() -> void:
 
 	state = State.DIVING
 	state_timer = DIVE_DURATION
+	velocity = Vector2.ZERO
 
 	save_attempted.emit("dive")
-	print("Short dive!")
+	print("Diving!")
+
 
 
 
@@ -167,7 +180,6 @@ func start_recovery(duration: float) -> void:
 	state = State.RECOVERING
 	state_timer = duration
 	recovery_duration = duration
-
 
 func can_save() -> bool:
 	return state == State.QUICK_SAVE \
@@ -194,6 +206,7 @@ func reset_keeper() -> void:
 	dive_target = global_position
 	save_direction = Vector2.UP
 	corner_released = false
+	last_move_direction = Vector2.LEFT
 
 
 func _draw() -> void:
@@ -252,27 +265,47 @@ func _draw() -> void:
 
 		
 
+
 func can_block_ball(ball_position: Vector2) -> bool:
 	if not can_save():
 		return false
 
-	var to_ball := ball_position - global_position
-	var distance := to_ball.length()
+	var to_ball: Vector2 = (
+		ball_position - global_position
+	)
 
-	if distance > get_save_reach() + 8.0:
-		return false
+	var distance: float = to_ball.length()
 
-	# Very close balls can be blocked in either direction.
-	if distance < 18.0:
-		return true
+	if state == State.QUICK_SAVE:
+		if distance > 42.0:
+			return false
 
-	var ball_direction := to_ball.normalized()
+		if distance < 18.0:
+			return true
 
-	# A positive dot product means the ball is
-	# generally in front of the chosen save direction.
-	var alignment := save_direction.dot(ball_direction)
+		return save_direction.dot(
+			to_ball.normalized()
+		) >= 0.35
 
-	return alignment >= 0.35
+	if state == State.DIVING:
+		# Length along the diving direction.
+		var forward: float = to_ball.dot(
+			dive_direction
+		)
+
+		# Width perpendicular to dive direction.
+		var sideways: float = absf(
+			to_ball.cross(dive_direction)
+		)
+
+		return (
+			forward >= -12.0
+			and forward <= 65.0
+			and sideways <= 22.0
+		)
+
+	return false
+
 	
 	
 	

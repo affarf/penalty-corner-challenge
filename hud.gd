@@ -38,18 +38,19 @@ func _ready() -> void:
 	update_scoreboard()
 
 
+
 func make_label(
 	value: String,
 	font_size: int = 22
 ) -> Label:
 	var label := Label.new()
 	label.text = value
-	label.horizontal_alignment = \
-		HORIZONTAL_ALIGNMENT_CENTER
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.add_theme_font_size_override(
 		"font_size", font_size
 	)
 	return label
+
 
 
 func make_button(
@@ -121,7 +122,7 @@ func build_menu() -> void:
 	var column := make_centered_column(menu_overlay)
 
 	column.add_child(
-		make_label("PENALTY CORNER CHALLENGE", 36)
+		make_label("PENALTY CORNER CHALLENGE",48)
 	)
 
 	column.add_child(
@@ -149,22 +150,32 @@ func build_menu() -> void:
 	)
 
 
+
 func build_results() -> void:
 	results_overlay = make_overlay()
-	var column := make_centered_column(
-		results_overlay
-	)
+	var column := make_centered_column(results_overlay)
 
 	column.add_child(
-		make_label("CHALLENGE COMPLETE!", 34)
+		make_label("CHALLENGE COMPLETE!", 52)
 	)
 
-	results_label = make_label("", 21)
+	column.add_spacer(false)
+
+	results_label = make_label("", 30)
 	column.add_child(results_label)
 
-	column.add_child(
-		make_button("PLAY AGAIN", restart_session)
+	var play_again := make_button(
+		"PLAY AGAIN",
+		restart_session
 	)
+
+	play_again.custom_minimum_size = Vector2(360, 70)
+	play_again.add_theme_font_size_override(
+		"font_size", 26
+	)
+
+	column.add_child(play_again)
+
 
 
 func start_session() -> void:
