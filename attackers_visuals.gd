@@ -1,9 +1,11 @@
 
 extends Node2D
 
-const INJECTOR_POS := Vector2(320, 30)
-const STOPPER_POS := Vector2(640, 340)
-const SLIP_POS := Vector2(830, 310)
+
+const INJECTOR_POS := Vector2(320, 80)
+const STOPPER_POS := Vector2(640, 420)
+const SLIP_POS := Vector2(830, 390)
+
 
 @onready var ball: CornerBall = \
 	get_parent().get_node("Ball") as CornerBall

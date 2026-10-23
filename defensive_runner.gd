@@ -2,8 +2,8 @@
 class_name DefensiveRunner
 extends Node2D
 
-const START_POSITION := Vector2(735, 25)
-const BLOCK_POSITION := Vector2(665, 185)
+const START_POSITION := Vector2(735, 50)
+const BLOCK_POSITION := Vector2(665, 235)
 
 @export var run_speed: float = 520.0
 @export var block_radius: float = 22.0

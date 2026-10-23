@@ -16,6 +16,10 @@ const QUICK_RECOVERY := 0.25
 const DIVE_DURATION := 0.35
 const DIVE_RECOVERY := 0.80
 
+const START_POSITION := Vector2(640, 50)
+
+var corner_released: bool = false
+
 enum State {
 	READY,
 	QUICK_SAVE,
@@ -34,6 +38,12 @@ var save_direction := Vector2.UP
 
 
 func _physics_process(delta: float) -> void:
+	
+	if not corner_released:
+		velocity = Vector2.ZERO
+		global_position = START_POSITION
+		return
+
 	match state:
 		State.READY:
 			handle_movement()
@@ -84,6 +94,9 @@ func _physics_process(delta: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if not corner_released:
+		return
+		
 	if state != State.READY:
 		return
 
@@ -175,11 +188,12 @@ func reset_keeper() -> void:
 	state = State.READY
 	state_timer = 0.0
 	velocity = Vector2.ZERO
-	global_position = Vector2(640, 75)
+	global_position = START_POSITION
 	dive_direction = Vector2.ZERO
 	dive_start_position = global_position
 	dive_target = global_position
 	save_direction = Vector2.UP
+	corner_released = false
 
 
 func _draw() -> void:
@@ -278,3 +292,8 @@ func can_block_shot(
 
 		_:
 			return false
+
+
+func release_from_line() -> void:
+	corner_released = true
+	print("Ball injected! Goalkeeper released.")

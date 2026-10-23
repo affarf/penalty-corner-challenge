@@ -26,13 +26,15 @@ enum ShotType {
 	DRAG_FLICK
 }
 
-const INJECT_POSITION := Vector2(320, 30)
-const STOP_POSITION := Vector2(640, 340)
-const SLIP_POSITION := Vector2(830, 310)
 
-const GOAL_Y := 30.0
+const INJECT_POSITION := Vector2(320, 80)
+const STOP_POSITION := Vector2(640, 420)
+const SLIP_POSITION := Vector2(830, 390)
+
+const GOAL_Y := 80.0
 const GOAL_LEFT := 550.0
 const GOAL_RIGHT := 730.0
+
 const GOAL_BAR_HEIGHT := 90.0
 const BALL_RADIUS := 8.0
 
@@ -112,6 +114,7 @@ func _unhandled_input(event: InputEvent) -> void:
 func start_corner() -> void:
 	routine = randi_range(0, 2)
 	phase = Phase.INJECTING
+	goalkeeper.release_from_line()
 
 	runner.start_run()
 

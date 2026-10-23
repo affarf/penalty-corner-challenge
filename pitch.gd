@@ -28,41 +28,42 @@ func _draw() -> void:
 		3.0
 	)
 
-	# Goal positioned at the top
-	var goal_left := (FIELD_WIDTH - GOAL_WIDTH) / 2.0
+
+	# Goal and backline at y = 80
+	var goal_left: float = (
+		FIELD_WIDTH - GOAL_WIDTH
+	) / 2.0
 
 	draw_rect(
-		Rect2(goal_left, 5, GOAL_WIDTH, 25),
+		Rect2(goal_left, 48, GOAL_WIDTH, 32),
 		Color("#DCE4E8")
 	)
 
 	draw_line(
-		Vector2(goal_left, 30),
-		Vector2(goal_left + GOAL_WIDTH, 30),
+		Vector2(20, 80),
+		Vector2(1260, 80),
 		Color.WHITE,
-		5.0
+		3.0
 	)
 
-	# Simplified shooting circle
+	# Enlarged shooting circle
 	var points := PackedVector2Array()
 
 	for i in range(65):
-		var angle := PI - (PI * i / 64.0)
+		var angle: float = PI - PI * i / 64.0
 
 		points.append(
 			Vector2(
-				FIELD_WIDTH / 2.0 + cos(angle) * 295.0,
-				30.0 + sin(angle) * 295.0
+				FIELD_WIDTH / 2.0 +
+					cos(angle) * 295.0,
+				80.0 + sin(angle) * 295.0
 			)
 		)
 
 	draw_polyline(points, Color.WHITE, 3.0)
 
-	# Penalty spot (illustrative)
 	draw_circle(
-		Vector2(FIELD_WIDTH / 2.0, 190),
+		Vector2(640, 240),
 		6.0,
 		Color.WHITE
 	)
-	
-	
